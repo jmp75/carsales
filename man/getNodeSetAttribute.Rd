@@ -1,0 +1,23 @@
+\name{getNodeSetAttribute}
+\alias{getNodeSetAttribute}
+\title{Extract car sales information from a list of XMLNode}
+\usage{
+  getNodeSetAttribute(xmlDoc, path, attribName = "content")
+}
+\arguments{
+  \item{xmlDoc}{an object of class XMLInternalDocument}
+
+  \item{path}{the XPath path identifying the items of
+  interest in the document.}
+
+  \item{attribName}{the name of the attribute of interest
+  in the nodes identified by the path.}
+}
+\value{
+  a character vector, all the values of the attributes
+  found.
+}
+\description{
+  Extract car sales information from a list of XMLNode
+}
+

@@ -1,0 +1,21 @@
+Package: carsales
+Type: Package
+Title: Car sales analysis for personal use
+Version: 0.2-1
+Date: 2013-10-06
+Author: J-M [aut, cre]
+Maintainer: Who to complain to <yourfault@somewhere.net>
+Description: A more fun way to buy a car
+License: GPL-3
+LazyLoad: yes
+URL: https://github.com/jmp75/carsales
+Depends:
+    R (>= 3.0),
+    RCurl,
+    XML,
+    plyr,
+    stringr
+Collate:
+    'carsales-package.r'
+    'carsales.R'
+    'web-retrieve.R'
