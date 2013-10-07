@@ -47,8 +47,9 @@ processDocument <- function(xmlDoc, prodPath = "//div[@itemtype='http://schema.o
     stopifnot(nrow(xdf) == length(res))
     res
   }
-  carsDf$brands <- getNodeSetAttribute(carsDf, xmlDoc, "//a//div[@itemprop='brand']//meta")
-  carsDf$models <- getNodeSetAttribute(carsDf, xmlDoc, "//a//meta[@itemprop='model']")
+
+  carsDf$brands <- getContentChecked(carsDf, xmlDoc, "//a//div[@itemprop='brand']//meta")
+  carsDf$models <- getContentChecked(carsDf, xmlDoc, "//a//meta[@itemprop='model']")
 
   processedInfo <- getInfoEntries(xmlDoc, paste0(prodPath, "//a//ul[@class='info']"))
   stopifnot(length(processedInfo) == nrow(carsDf))
