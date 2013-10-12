@@ -14,8 +14,8 @@ Depends:
     RCurl,
     XML,
     plyr,
-    stringr
+    stringr, ggplot2
 Collate:
     'carsales-package.r'
-    'carsales.R'
     'web-retrieve.R'
+    'data-wrangle.R'

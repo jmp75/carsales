@@ -8,6 +8,7 @@
 #' License: \tab GPL 3\cr
 #' }
 #'
+#' @import ggplot2
 #' @import RCurl
 #' @import XML
 #' @import plyr

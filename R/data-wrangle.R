@@ -1,9 +1,81 @@
 
+#' @export
+potentialBrands <- c("citroen", "ford", "holden", "honda", "hyundai", "jeep", "kia", "land rover", "mazda", "mitsubishi", "nissan", "peugeot", "range rover", "renault", "subaru", "suzuki", "toyota", "volkswagen") 
+
+#' @export
+modelsOfInterest <- function() {
+  models <- list()
+  # sort(as.character(unique(d_toy$model)))
+  #  can replace with regexp on  \" *\"  in notepad plus plus
+  models[["toyota"]] <- c( "aurion", "camry", "corolla", "fj cruiser", "hilux", "kluger", "landcruiser", "rav4", "tarago")
+  models
+}
+
+#' @export
+keep <- function( d, colname, kept) {
+  d_2 <- subset(d, d[[colname]] %in% kept)
+  droplevels(d_2)
+}
+
+#' @export
+keepBrands <- function( d, brandsKept=c(potentialBrands)) {
+  keep(d, 'brand', brandsKept )
+}
+
+#' @export
+keepModels <- function( d, kept ) {
+  keep(d, 'model', kept )
+}
+
+#' Process a data frame to get data useful for plotting
+#'
+#' Process a data frame to get data useful for plotting
+#'
+#' @param d a single data frame with columns containing all the raw outputs from the processing, as returned by processIngestedData
+#'  Expected columns available are at least: "data-price", "data-seotitle", "brand", "model", "engine.icon.car.engine", "km.icon.kilometers"
+#' @return a data frame with columns [1] "brand"        "model"        "distance"     "cyl"          "cylvol"       "price"        "year_integer" "year".  
+#' Brand, models, cyl and years are already factors.
+#' @export
+makePlotable <- function ( d ) {
+  distance <- tolower(d$km.icon.kilometers)
+  distance <- str_replace_all(distance, ' kms', '')
+  distance <- str_replace_all(distance, ',', '')
+
+  # To get the nuumber of cylinders and volume displacement is a bit more involved. 
+  # Note that of course some things will be missing sometimes, with partial data cyl or L, or none.
+  # [1] 4 cyl, 1.6 L 4 cyl, 1.6 L 4 cyl, 2.0 L 4 cyl, 1.8 L
+
+  has_cyl <- str_detect(d$engine.icon.car.engine, 'cyl')
+  has_cyl <- ifelse( is.na(has_cyl), FALSE, has_cyl)
+
+  has_litres <- str_detect(d$engine.icon.car.engine, ' L')
+  has_litres <- ifelse( is.na(has_litres), FALSE, has_litres)
+
+  a <- str_split(tolower(d$engine.icon.car.engine), ',')
+  cyl <- ifelse( has_cyl, as.integer(str_replace_all(laply(a, `[`, 1), ' cyl', '')), NA )
+  cylvol <- ifelse( has_litres, as.numeric(str_replace_all(laply(a, `[`, 2), ' l', '')), NA)
+
+  # other columns seems to be reliable enough to be processed simply. Watch out however.
+  d_1 <- data.frame(
+    brand = as.factor(tolower(d$brand)),
+    model = as.factor(tolower(d$model)),
+    distance = as.integer(distance),
+    cyl = as.factor(cyl),
+    cylvol = cylvol,
+    price = as.numeric(d$`data-price`),
+    year_integer = as.integer(substr(d$`data-seotitle`, 1, 4)),
+    year = as.factor(as.integer(substr(d$`data-seotitle`, 1, 4))),
+    href = d$href
+  )
+  d_1
+}
+
+
 #' Process the data ingested from web pages into a data frame
 #'
 #' Process the data ingested from web pages into a data frame
 #'
-#' @param dAll a list, where each element is such that 
+#' @param dAll a list, where each element is the raw result of a page retrieval via the function processPage
 #' @export
 processIngestedData <- function ( dAll ) {
   infoCat <- getAllInfoTypes(dAll)
