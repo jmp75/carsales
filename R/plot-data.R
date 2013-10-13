@@ -37,6 +37,16 @@ byModel <- function(d, plotTitle='By Model') {
   priceFctDist(d, plotTitle) + facet_wrap( ~ model)
 }
 
+#' Get a facet plot by year, price func(distance), 
+#' 
+#' Get a facet plot by year, price func(distance), 
+#' 
+#' @export
+byYear <- function(d, plotTitle='By Year') {
+  ggplot(d, aes(x = distance, y = price)) + 
+    geom_point() + ggtitle(plotTitle) + facet_wrap( ~ year)
+}
+
 #' @export
 # defaultPlotSetup <- function( plotTitle = 'no title' ) {
 #   geom_point() + ggtitle(plotTitle)

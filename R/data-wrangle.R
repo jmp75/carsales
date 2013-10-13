@@ -40,7 +40,8 @@ makePlotable <- function ( d ) {
   distance <- tolower(d$km.icon.kilometers)
   distance <- str_replace_all(distance, ' kms', '')
   distance <- str_replace_all(distance, ',', '')
-
+  distance <- as.integer(distance)
+  distance <- ifelse(is.na(distance), 0, distance)  # it looks like quite a few new vehicles dont provide explicit Km. Hopefully nobody else, but beware.
   # To get the nuumber of cylinders and volume displacement is a bit more involved. 
   # Note that of course some things will be missing sometimes, with partial data cyl or L, or none.
   # [1] 4 cyl, 1.6 L 4 cyl, 1.6 L 4 cyl, 2.0 L 4 cyl, 1.8 L
@@ -63,9 +64,14 @@ makePlotable <- function ( d ) {
     cyl = as.factor(cyl),
     cylvol = cylvol,
     price = as.numeric(d$`data-price`),
+    title = as.character(d$`data-title`),
     year_integer = as.integer(substr(d$`data-seotitle`, 1, 4)),
     year = as.factor(as.integer(substr(d$`data-seotitle`, 1, 4))),
-    href = d$href
+    vehicletype = as.factor(as.character(d$`data-vehicletype`)),
+    bodytype = as.factor(as.character(d$`body.type.icon.car`)),
+    href = d$href,
+    transmission = as.factor(as.character(d$transmission.icon.transmission)),
+    stringsAsFactors = FALSE
   )
   d_1
 }

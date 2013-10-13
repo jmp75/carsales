@@ -57,6 +57,58 @@ processDocument <- function(xmlDoc, prodPath = "//div[@itemtype='http://schema.o
   list(carsDf=carsDf, info=processedInfo)
 }
 
+#' Apply a function to an XML document 
+#'
+#' Apply a function to an XML document. This takes care of proper disposal of XMLDocument if given a URI as an input
+#'
+#' @param uriOrXmlDoc a URI or an object of class XMLInternalDocument
+#' @param xmlProcessor a function that takes an XMLInternalDocument as argument
+#' @return An integer, the number of pages to browse through
+#' @export
+processPageTry <- function(uriOrXmlDoc, xmlProcessor) {
+  if(is(uriOrXmlDoc, 'XMLInternalDocument')) {
+    xmlProcessor(uriOrXmlDoc)
+  } else if (is.character(uriOrXmlDoc)) {
+    cars <- htmlTreeParse(getURL(uriOrXmlDoc), useInternalNodes=TRUE)
+    tryCatch(xmlProcessor(cars), finally= free(cars))
+  }
+  else
+    stop('argument type not supported')
+}
+
+#' Gets the number of pages for a search criteria
+#'
+#' Gets the number of pages for a search criteria
+#'
+#' @export
+getNumPages <- function(xmlDoc) {
+    # <div class="sub-utility listings-sort">
+      # <strong data-page="1">Page 1 of 6</strong>
+    pagesNode <- getNodeSet(xmlDoc, "//div[@class='sub-utility listings-sort']//strong")
+    stopifnot(length(pagesNode)==1)
+    s <- str_split(xmlValue(pagesNode[[1]]), ' ')[[1]]
+    as.integer(s[length(s)])
+}
+
+#' Retrieve details from the individual page of the car.
+#' 
+#' Retrieve details from the individual page of the car.
+#' 
+#' @export
+getCarDetails <- function( xmlDoc ) {
+  carDetails <- xmlDoc
+  # <dd itemprop="transmission">4 SP AUTOMATIC</dd>
+  transmissionNode <- getNodeSet(carDetails, "//dd[@itemprop='transmission']")
+  transmission <- xmlValue(transmissionNode[[1]])
+  # <dd itemprop="fuelEfficiency">9.6L / 100Km</dd>
+  fuelNode <- getNodeSet(carDetails, "//dd[@itemprop='fuelEfficiency']")
+  fuel <- xmlValue(fuelNode[[1]])
+  res <- c(transmission, fuel)
+  names(res) <- c('transmission', 'fuel')
+  res
+}
+
+
 #' Extract car sales information of variable length
 #'
 #' Extract car sales information of variable length
