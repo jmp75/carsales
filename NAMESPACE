@@ -1,6 +1,7 @@
 export(byBrand)
 export(byModel)
 export(byYear)
+export(byYearLm)
 export(collate)
 export(collateBatch)
 export(collateInfo)

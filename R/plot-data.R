@@ -47,7 +47,17 @@ byYear <- function(d, plotTitle='By Year') {
     geom_point() + ggtitle(plotTitle) + facet_wrap( ~ year)
 }
 
+#' Linear regression for a model, grouped by year
+#' 
+#' Linear regression for a model, grouped by year
+#' 
 #' @export
+byYearLm <- function(d, plotTitle) {
+  ggplot(d, aes(x = distance, y = price, group=year, color=year)) + 
+    geom_point() + ggtitle(plotTitle) + geom_smooth(method='lm', se=FALSE)
+}
+
+#  #' @export
 # defaultPlotSetup <- function( plotTitle = 'no title' ) {
 #   geom_point() + ggtitle(plotTitle)
 # }

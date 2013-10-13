@@ -55,6 +55,8 @@ makePlotable <- function ( d ) {
   a <- str_split(tolower(d$engine.icon.car.engine), ',')
   cyl <- ifelse( has_cyl, as.integer(str_replace_all(laply(a, `[`, 1), ' cyl', '')), NA )
   cylvol <- ifelse( has_litres, as.numeric(str_replace_all(laply(a, `[`, 2), ' l', '')), NA)
+  
+  year <- as.integer(substr(d$`data-seotitle`, 1, 4))
 
   # other columns seems to be reliable enough to be processed simply. Watch out however.
   d_1 <- data.frame(
@@ -65,8 +67,8 @@ makePlotable <- function ( d ) {
     cylvol = cylvol,
     price = as.numeric(d$`data-price`),
     title = as.character(d$`data-title`),
-    year_integer = as.integer(substr(d$`data-seotitle`, 1, 4)),
-    year = as.factor(as.integer(substr(d$`data-seotitle`, 1, 4))),
+    year_integer = year, # need this for subsetting, I think. Factors confusing
+    year = as.factor(year), 
     vehicletype = as.factor(as.character(d$`data-vehicletype`)),
     bodytype = as.factor(as.character(d$`body.type.icon.car`)),
     href = d$href,
