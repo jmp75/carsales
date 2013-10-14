@@ -41,7 +41,6 @@ makePlotable <- function ( d ) {
   distance <- str_replace_all(distance, ' kms', '')
   distance <- str_replace_all(distance, ',', '')
   distance <- as.integer(distance)
-  distance <- ifelse(is.na(distance), 0, distance)  # it looks like quite a few new vehicles dont provide explicit Km. Hopefully nobody else, but beware.
   # To get the nuumber of cylinders and volume displacement is a bit more involved. 
   # Note that of course some things will be missing sometimes, with partial data cyl or L, or none.
   # [1] 4 cyl, 1.6 L 4 cyl, 1.6 L 4 cyl, 2.0 L 4 cyl, 1.8 L
@@ -57,6 +56,9 @@ makePlotable <- function ( d ) {
   cylvol <- ifelse( has_litres, as.numeric(str_replace_all(laply(a, `[`, 2), ' l', '')), NA)
   
   year <- as.integer(substr(d$`data-seotitle`, 1, 4))
+  # it looks like quite a few new vehicles dont provide explicit Km. 
+  # Since some second hand vehicles also skip this info, use year as a criteria.
+  distance <- ifelse(is.na(distance) & year > 2011, 0, distance)  
 
   # other columns seems to be reliable enough to be processed simply. Watch out however.
   d_1 <- data.frame(
