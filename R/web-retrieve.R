@@ -136,7 +136,9 @@ getInfo <- function(infoHeadNodes) {
   infoNames <- lapply( x, xmlAttrs)
   infoValues <- lapply( x, xmlValue)
   withNames <- sapply(infoNames, function(item) { !is.null(item) } )
-  infoValues <- infoValues[withNames]
-  names(infoValues) <- as.character(infoNames[withNames])
+  if((length(withNames))>0) {
+    infoValues <- infoValues[withNames]
+    names(infoValues) <- as.character(infoNames[withNames])
+  }
   infoValues
 }
