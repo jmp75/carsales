@@ -69,6 +69,7 @@ makePlotable <- function ( d ) {
     cylvol = cylvol,
     price = as.numeric(d$`data-price`),
     title = as.character(d$`data-title`),
+    state = as.character(d$`data-state`),
     year_integer = year, # need this for subsetting, I think. Factors confusing
     year = as.factor(year), 
     vehicletype = as.factor(as.character(d$`data-vehicletype`)),
