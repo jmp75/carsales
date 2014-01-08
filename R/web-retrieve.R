@@ -84,10 +84,18 @@ processPageTry <- function(uriOrXmlDoc, xmlProcessor) {
 getNumPages <- function(xmlDoc) {
     # <div class="sub-utility listings-sort">
       # <strong data-page="1">Page 1 of 6</strong>
-    pagesNode <- getNodeSet(xmlDoc, "//div[@class='sub-utility listings-sort']//strong")
+    # pagesNode <- getNodeSet(xmlDoc, "//div[@class='sub-utility listings-sort']//strong")
+    
+    # 
+    # things have changed in 2014; google chrome tells me the new XPath to use is something like:
+    # //*[@id="content"]/div/div[1]/div[2]/div[2]/div[2]/div[16]/a[5]
+    # but I find I need:
+    pagesNode <- getNodeSet(xmlDoc, "//div[@class='pagination']//a[5]")
     stopifnot(length(pagesNode)==1)
-    s <- str_split(xmlValue(pagesNode[[1]]), ' ')[[1]]
-    as.integer(s[length(s)])
+    # s <- str_split(xmlValue(pagesNode[[1]]), ' ')[[1]]
+    # as.integer(s[length(s)])
+    # Changes in 2014:
+    as.integer(xmlValue(pagesNode[[1]]))
 }
 
 #' Retrieve details from the individual page of the car.
@@ -132,13 +140,19 @@ getInfoEntries <- function(xmlDoc, infoPath) {
 #' @return a named character vector
 #' @export
 getInfo <- function(infoHeadNodes) {
-  x <- infoHeadNodes
-  infoNames <- lapply( x, xmlAttrs)
-  infoValues <- lapply( x, xmlValue)
-  withNames <- sapply(infoNames, function(item) { !is.null(item) } )
-  if((length(withNames))>0) {
-    infoValues <- infoValues[withNames]
-    names(infoValues) <- as.character(infoNames[withNames])
+  if(length(infoHeadNodes) == 0){
+    list()
+  } else {
+    x <- infoHeadNodes
+    infoNames <- lapply( x, xmlAttrs)
+    infoValues <- lapply( x, xmlValue)
+    withNames <- sapply(infoNames, function(item) { !is.null(item) } )
+    if((length(withNames))>0) {
+      infoValues <- infoValues[withNames]
+      names(infoValues) <- as.character(infoNames[withNames])
+    } else {
+      infoValues <- list()
+    }
+    infoValues
   }
-  infoValues
 }
