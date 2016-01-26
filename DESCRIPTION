@@ -1,8 +1,8 @@
 Package: carsales
 Type: Package
 Title: Car sales analysis for personal use
-Version: 0.2-1
-Date: 2013-10-06
+Version: 0.3-1
+Date: 2013-11-21
 Author: J-M [aut, cre]
 Maintainer: Who to complain to <yourfault@somewhere.net>
 Description: A more fun way to buy a car
@@ -15,9 +15,13 @@ Depends:
     XML,
     plyr,
     stringr,
+    dplyr,
+	rvest,
+	jsonlite,
     ggplot2
 Collate:
     'carsales-package.r'
     'web-retrieve.R'
     'data-wrangle.R'
     'plot-data.R'
+RoxygenNote: 5.0.0

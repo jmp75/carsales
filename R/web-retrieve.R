@@ -156,3 +156,207 @@ getInfo <- function(infoHeadNodes) {
     infoValues
   }
 }
+
+
+# .carListing--textHeading
+# .carListing--textPrice
+# .icon-gauge
+# .icon-gears
+# .dealer
+
+#.listing-cars
+  
+#' @export
+sapply_fun <- function(my_list, my_fun=rvest::html_text) {
+  sapply(my_list, my_fun)
+}
+
+#' @export
+lapply_fun <- function(my_list, my_fun=rvest::html_text) {
+  lapply(my_list, my_fun)
+}
+
+#' @export
+get_text_data <- function(node) {
+  a <- xml2::xml_children(node)
+  if(is.list(a)) {
+    a <- a[[1]]
+  }
+  if(!is(a, "xml_node")) {
+    return('')
+  }
+  attbuts <- xml_attrs(a)
+  if(!is.character(attbuts)) {
+    return('')
+  }
+  if(!("ng-init" %in% names(attbuts))) {
+    return('')
+  }
+  return(attbuts["ng-init"])
+}
+
+#' @export
+get_tabular_data <- function(strdata) {
+  strdata <- str_replace(strdata, pattern='setCurrentListingId.*setGAEventData\\(', '')
+  strdata <- str_replace(strdata, pattern='\\);$', '')
+  a_list <- jsonlite::fromJSON(strdata)
+  return(as.data.frame(a_list, stringsAsFactors=FALSE))
+}
+
+#' @export
+get_html_page <- function(url)
+{
+  url %>%
+    read_html()
+} 
+
+#' @export
+get_listings_nodes <- function(html_page)
+{
+  if(is.character(html_page)) {
+    html_page = get_html_page(html_page)
+  }
+  html_page %>%
+    html_nodes(".listing-cars")
+} 
+
+#' @export
+get_listings_pagination <- function(html_page)
+{
+  if(is.character(html_page)) {
+    html_page = get_html_page(html_page)
+  }
+  paginations <- html_page %>%
+    html_nodes(".listing-pagination")
+  if(is.list(paginations)) {
+    if(length(paginations)>0) {
+      return(paginations[[1]])
+    }
+  }
+  return(paginations)
+} 
+
+#' @export
+get_num_pages <- function(html_page) {
+  listings_pagination_node <- get_listings_pagination(html_page)
+  pages_txt <- html_text(xml_children(listings_pagination_node)[2])
+  # [1] "Page 2 of 8"
+  return(as.integer(str_replace(pages_txt, pattern='^Page.* of ', '')))
+}
+
+#' @export
+get_listings_data <- function(htmlpage) {
+  data_list <- htmlpage %>%
+    html_nodes(".carListing--textCol2") %>%
+    html_nodes(".btn-group") %>%
+    lapply_fun(my_fun=get_text_data) %>%
+    lapply_fun(my_fun=get_tabular_data) %>%
+    ldply
+    # Note: seems one cannot use  plyr::ldply with %>%
+
+  # Some of the information, including the, er, critical, price and year, is not in the previous data_list    
+    # .carListing--textHeading
+  heading <- htmlpage %>%
+    html_nodes(".carListing--textHeading") %>%
+    sapply_fun()
+
+  # .carListing--textPrice
+  prices <- htmlpage %>%
+    html_nodes(".carListing--textPrice") %>%
+    sapply_fun()
+    
+  hrefs <- htmlpage %>% html_nodes(".carListing.carListing-slideBtn") %>% html_attr(name='href')
+
+  data_list$href <- hrefs
+  data_list$price <- prices
+  data_list$heading <- heading
+
+  return(data_list)
+}
+
+#' @export
+process_raw_info <- function ( d ) {
+  distance <- tolower(d$Kms)
+  distance <- str_replace_all(distance, ' km.*', '')
+  distance <- str_replace_all(distance, ',', '')
+  distance <- str_replace_all(distance, ' ', '')
+  distance <- as.integer(distance)
+
+  price <- tolower(d$price)
+  price <- str_replace_all(price, '\\$', '')
+  price <- str_replace_all(price, ',', '')
+  price <- as.integer(price)
+
+  seller_type <- tolower(d$seller_type)
+  used <- str_detect(seller_type, 'used')
+  seller_status <- as.character(rep(NA, length(used)))
+  seller_status <- ifelse(str_detect(seller_type, 'dealer'),  'dealer',  seller_status)
+  seller_status <- ifelse(str_detect(seller_type, 'private'), 'private', seller_status)
+
+  # To get the nuumber of cylinders and volume displacement is a bit more involved. 
+  # Note that of course some things will be missing sometimes, with partial data cyl or L, or none.
+  # [1] 4 cyl, 1.6 L 4 cyl, 1.6 L 4 cyl, 2.0 L 4 cyl, 1.8 L
+  has_str_marker <- function(x, marker) {
+    has_marker <- str_detect(x, marker)
+    has_marker <- ifelse( is.na(has_marker), FALSE, has_marker)
+    return(has_marker)
+  }
+  
+  engine <- d$engine
+  has_cyl <- has_str_marker(engine, 'cyl')
+  has_litres <- has_str_marker(engine, ' L')
+
+  a <- str_split(tolower(engine), ',')
+  cyl <- ifelse( has_cyl, as.integer(str_replace_all(laply(a, `[`, 1), ' cyl', '')), NA )
+  cylvol <- ifelse( has_litres, as.numeric(str_replace_all(laply(a, `[`, 2), ' l', '')), NA)
+  
+  heading_length <- str_length(d$heading)
+  ma <- pmin(heading_length, 4)
+  year <- ifelse(heading_length < 4, NA, d$heading)
+  year <- as.integer(substr(d$heading, 1, 4))
+  # it looks like quite a few new vehicles dont provide explicit Km. 
+  # Since some second hand vehicles also skip this info, use year as a criteria.
+  # distance <- ifelse(is.na(distance) & year > 2011, 0, distance)  
+
+  # other columns seems to be reliable enough to be processed simply. Watch out however.
+  result <- data.frame(
+    brand          =  as.factor(toupper(d$make))
+    ,model          = as.factor(toupper(d$model))           
+    ,body_type      = as.factor(d$body_type)
+    ,transmission   = as.factor(as.character(d$transmission)) 
+    ,seller_type    = as.factor(seller_status)
+    ,used           = as.factor(used)
+    ,cyl            = as.factor(cyl)          
+    ,year           = as.factor(year)          
+    ,featured       = as.factor(d$featured)
+    ,listingid      = d$listingid       
+    ,cylvol         = cylvol
+    ,location       = d$location        
+    ,distance       = distance   
+    ,price          = price           
+    ,heading        = d$heading         
+    ,href           = d$href
+    ,stringsAsFactors = FALSE
+  )
+  return(result)
+
+}
+
+#' Apply a function to an XML document 
+#'
+#' Apply a function to an XML document. This takes care of proper disposal of XMLDocument if given a URI as an input
+#'
+#' @param html_page a URI or an object of class xml_document
+#' @param xmlProcessor a function that takes an xml_document as argument
+#' @return An integer, the number of pages to browse through
+#' @export
+process_page_try <- function(html_page, xmlProcessor) {
+  if(is.character(html_page)) {
+    html_page = get_html_page(html_page)
+  }
+  if(is(html_page, 'xml_document')) {
+    return(tryCatch(xmlProcessor(cars)))
+  }
+  else
+    stop('argument html_page is not an xml_document')
+}

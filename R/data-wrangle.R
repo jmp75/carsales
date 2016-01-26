@@ -13,7 +13,13 @@ modelsOfInterest <- function() {
 
 #' @export
 keep <- function( d, colname, kept) {
-  d_2 <- subset(d, d[[colname]] %in% kept)
+  criterion <- d[[colname]]
+  if(is.character(kept)) {
+    do_keep <- tolower(criterion) %in% tolower(kept)
+  } else {
+    do_keep <- criterion %in% kept
+  }
+  d_2 <- subset(d, do_keep)
   droplevels(d_2)
 }
 
