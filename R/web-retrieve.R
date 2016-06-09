@@ -204,10 +204,10 @@ get_tabular_data <- function(strdata) {
 }
 
 #' @export
-get_html_page <- function(url)
+get_html_page <- function(url, encoding='')
 {
   url %>%
-    read_html()
+    read_html(encoding=encoding)
 } 
 
 #' @export
@@ -221,13 +221,13 @@ get_listings_nodes <- function(html_page)
 } 
 
 #' @export
-get_listings_pagination <- function(html_page)
+get_listings_pagination <- function(html_page, css=".listing-pagination")
 {
   if(is.character(html_page)) {
     html_page = get_html_page(html_page)
   }
   paginations <- html_page %>%
-    html_nodes(".listing-pagination")
+    html_nodes(css)
   if(is.list(paginations)) {
     if(length(paginations)>0) {
       return(paginations[[1]])
@@ -237,9 +237,11 @@ get_listings_pagination <- function(html_page)
 } 
 
 #' @export
-get_num_pages <- function(html_page) {
-  listings_pagination_node <- get_listings_pagination(html_page)
-  pages_txt <- html_text(xml_children(listings_pagination_node)[2])
+get_num_pages <- function(html_page, css=".listing-pagination") {
+  listings_pagination_node <- get_listings_pagination(html_page, css=css)
+  x <- xml_children(listings_pagination_node)[2]
+  if(is(x, "xml_nodeset")) x <- xml_children(x)
+  pages_txt <- html_text(x)[1]
   # [1] "Page 2 of 8"
   return(as.integer(str_replace(pages_txt, pattern='^Page.* of ', '')))
 }
@@ -276,22 +278,33 @@ get_listings_data <- function(htmlpage) {
 
 #' @export
 process_raw_info <- function ( d ) {
-  distance <- tolower(d$Kms)
-  distance <- str_replace_all(distance, ' km.*', '')
-  distance <- str_replace_all(distance, ',', '')
-  distance <- str_replace_all(distance, ' ', '')
-  distance <- as.integer(distance)
-
-  price <- tolower(d$price)
-  price <- str_replace_all(price, '\\$', '')
-  price <- str_replace_all(price, ',', '')
-  price <- as.integer(price)
+  tmpDist <- as.numeric(rep(NA, nrow(d)))
+  hasDist <- 'distance' %in% colnames(d)
+  if (hasDist) {
+    tmpDist <- d$distance
+  } else { 
+    tmpDist <- tolower(d$Kms)
+    tmpDist <- str_replace_all(distance, ' km.*', '')
+    tmpDist <- str_replace_all(distance, ',', '')
+    tmpDist <- str_replace_all(distance, ' ', '')
+    tmpDist <- as.integer(distance)
+  }
+  distance <- tmpDist
+  if(!is.numeric(d$price)) {
+    price <- tolower(d$price)
+    price <- str_replace_all(price, '\\$', '')
+    price <- str_replace_all(price, ',', '')
+    price <- as.integer(price)
+  } else {price <- d$price}
 
   seller_type <- tolower(d$seller_type)
   used <- str_detect(seller_type, 'used')
-  seller_status <- as.character(rep(NA, length(used)))
+  seller_status <- seller_type # as.character(rep(NA, length(used)))
   seller_status <- ifelse(str_detect(seller_type, 'dealer'),  'dealer',  seller_status)
   seller_status <- ifelse(str_detect(seller_type, 'private'), 'private', seller_status)
+
+  # carsales: may have NA for prices for new. How to???
+  # price <- ifelse(str_detect(seller_type, 'showroom'), '???', price)
 
   # To get the nuumber of cylinders and volume displacement is a bit more involved. 
   # Note that of course some things will be missing sometimes, with partial data cyl or L, or none.
@@ -303,12 +316,14 @@ process_raw_info <- function ( d ) {
   }
   
   engine <- d$engine
+  engine <- str_replace_all(engine, 'cyl ', 'cyl, ' ) # carsales has no comma separation
   has_cyl <- has_str_marker(engine, 'cyl')
-  has_litres <- has_str_marker(engine, ' L')
+  has_litres <- has_str_marker(engine, 'L')
+  engine <- tolower(engine) %>% trimws
 
-  a <- str_split(tolower(engine), ',')
-  cyl <- ifelse( has_cyl, as.integer(str_replace_all(laply(a, `[`, 1), ' cyl', '')), NA )
-  cylvol <- ifelse( has_litres, as.numeric(str_replace_all(laply(a, `[`, 2), ' l', '')), NA)
+  a <- str_split(engine, ',')
+  cyl <- ifelse( has_cyl, as.integer(str_replace_all(laply(a, `[`, 1), 'cyl', '')), NA )
+  cylvol <- ifelse( has_litres, as.numeric(str_replace_all(laply(a, `[`, 2), 'l', '')), NA)
   
   heading_length <- str_length(d$heading)
   ma <- pmin(heading_length, 4)
@@ -336,6 +351,7 @@ process_raw_info <- function ( d ) {
     ,price          = price           
     ,heading        = d$heading         
     ,href           = d$href
+    ,model_year     = d$model_year
     ,stringsAsFactors = FALSE
   )
   return(result)

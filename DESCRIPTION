@@ -16,12 +16,12 @@ Depends:
     plyr,
     stringr,
     dplyr,
-	rvest,
-	jsonlite,
+    rvest,
+    jsonlite,
     ggplot2
 Collate:
     'carsales-package.r'
     'web-retrieve.R'
     'data-wrangle.R'
     'plot-data.R'
-RoxygenNote: 5.0.0
+RoxygenNote: 5.0.1
