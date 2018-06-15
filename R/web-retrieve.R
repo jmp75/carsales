@@ -237,13 +237,18 @@ get_listings_pagination <- function(html_page, css=".listing-pagination")
 } 
 
 #' @export
-get_num_pages <- function(html_page, css=".listing-pagination") {
+get_num_pages <- function(html_page, css=".listing-pagination", pattern_to_remove='^Page.* of |^of *') {
   listings_pagination_node <- get_listings_pagination(html_page, css=css)
-  x <- xml_children(listings_pagination_node)[2]
-  if(is(x, "xml_nodeset")) x <- xml_children(x)
-  pages_txt <- html_text(x)[1]
+  if(length(listings_pagination_node)==0) stop(paste0("No node found for css named ", css))
+  listings_pagination_node_children <- xml_children(listings_pagination_node)
+  x <- xml_children(listings_pagination_node)[1]
+  # if(is(x, "xml_nodeset")) x <- xml_children(x)
+  pages_txt <- html_text(x)
+  if(length(pages_txt)!=1) stop("Unexpected length of the vector of characters for the pagination. Should have been length one.") 
   # [1] "Page 2 of 8"
-  return(as.integer(str_replace(pages_txt, pattern='^Page.* of ', '')))
+  # or 
+  # [1] "of 92"
+  return(as.integer(str_replace(pages_txt, pattern=pattern_to_remove, '')))
 }
 
 #' @export
